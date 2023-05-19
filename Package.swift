@@ -1,20 +1,20 @@
-// swift-tools-version:5.1
+// swift-tools-version:5.5
 
 import PackageDescription
 
 let package = Package(
     name: "RSKGrowingTextView",
     platforms: [
-        .iOS(.v9)
+        .iOS(.v14),
+        .macOS(.v11)
     ],
     products: [
         .library(name: "RSKGrowingTextView", targets: ["RSKGrowingTextView"])
     ],
     dependencies: [
-        .package(url: "https://github.com/ruslanskorb/RSKPlaceholderTextView.git", from: "6.1.0")
     ],
     targets: [
-        .target(name: "RSKGrowingTextView", dependencies: ["RSKPlaceholderTextView"], path: "RSKGrowingTextView")
+        .target(name: "RSKGrowingTextView", dependencies: [], path: "RSKGrowingTextView")
     ],
     swiftLanguageVersions: [.v5]
 )

@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-
-import RSKPlaceholderTextView
+#if os(iOS)
+//import RSKPlaceholderTextView
 import UIKit
 
 /// The type of the block which contains user defined actions that will run during the height change.
@@ -44,7 +44,7 @@ public typealias HeightChangeUserActionsBlockType = ((_ oldHeight: CGFloat, _ ne
 }
 
 /// A light-weight UITextView subclass that automatically grows and shrinks based on the size of user input and can be constrained by maximum and minimum number of lines.
-@IBDesignable open class RSKGrowingTextView: RSKPlaceholderTextView {
+@IBDesignable open class RSKGrowingTextView: SymUITextView {
     
     // MARK: - Private Properties
     
@@ -118,11 +118,11 @@ public typealias HeightChangeUserActionsBlockType = ((_ oldHeight: CGFloat, _ ne
     
     // MARK: - Superclass Properties
     
-    open override var attributedPlaceholder: NSAttributedString? {
-        didSet {
-            refreshHeightIfNeededAnimated(false)
-        }
-    }
+//    open override var attributedPlaceholder: NSAttributedString? {
+//        didSet {
+//            refreshHeightIfNeededAnimated(false)
+//        }
+//    }
 
     override open var attributedText: NSAttributedString! {
         didSet {
@@ -255,8 +255,6 @@ public typealias HeightChangeUserActionsBlockType = ((_ oldHeight: CGFloat, _ ne
         let calculationTextStorage: NSTextStorage?
         if let attributedText = attributedText, attributedText.length > 0 {
             calculationTextStorage = NSTextStorage(attributedString: attributedText)
-        } else if let attributedPlaceholder = attributedPlaceholder, attributedPlaceholder.length > 0 {
-            calculationTextStorage = NSTextStorage(attributedString: attributedPlaceholder)
         } else {
             calculationTextStorage = nil
         }
@@ -291,7 +289,7 @@ public typealias HeightChangeUserActionsBlockType = ((_ oldHeight: CGFloat, _ ne
     private func refreshHeightIfNeededAnimated(_ animated: Bool) {
         let oldHeight = bounds.height
         let newHeight = calculatedHeight
-        
+        print("refreshHeightIfNeededAnimated: old \(oldHeight) -> \(newHeight)")
         if oldHeight != newHeight {
             typealias HeightChangeSetHeightBlockType = ((_ oldHeight: CGFloat, _ newHeight: CGFloat) -> Void)
             let heightChangeSetHeightBlock: HeightChangeSetHeightBlockType = { (oldHeight: CGFloat, newHeight: CGFloat) -> Void in
@@ -323,7 +321,8 @@ public typealias HeightChangeUserActionsBlockType = ((_ oldHeight: CGFloat, _ ne
                 heightChangeCompletionBlock(oldHeight, newHeight)
             }
         } else {
-            scrollToVisibleCaretIfNeeded()
+            print("refreshHeightIfNeededAnimated: SKIPPING scrolling to visibleCaretIfNeeded")
+//            scrollToVisibleCaretIfNeeded()
         }
     }
     
@@ -346,12 +345,14 @@ public typealias HeightChangeUserActionsBlockType = ((_ oldHeight: CGFloat, _ ne
     
     private func scrollToVisibleCaretIfNeeded() {
         guard let textPosition = selectedTextRange?.end else {
+            print("scrollToVisibleCaretIfNeeded: no selectedTextRange")
             return
         }
         
         if textStorage.editedRange.location == NSNotFound && !isDragging && !isDecelerating {
             let caretRect = self.caretRect(for: textPosition)
             let caretCenterRect = CGRect(x: caretRect.midX, y: caretRect.midY, width: 0.0, height: 0.0)
+            print("scrollToVisibleCaretIfNeeded: caretRect \(caretRect)")
             scrollRectToVisibleConsideringInsets(caretCenterRect)
         }
     }
@@ -367,3 +368,4 @@ public typealias HeightChangeUserActionsBlockType = ((_ oldHeight: CGFloat, _ ne
         }
     }
 }
+#endif
