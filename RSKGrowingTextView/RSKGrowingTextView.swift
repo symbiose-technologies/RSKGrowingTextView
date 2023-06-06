@@ -289,7 +289,7 @@ public typealias HeightChangeUserActionsBlockType = ((_ oldHeight: CGFloat, _ ne
     private func refreshHeightIfNeededAnimated(_ animated: Bool) {
         let oldHeight = bounds.height
         let newHeight = calculatedHeight
-        print("refreshHeightIfNeededAnimated: old \(oldHeight) -> \(newHeight)")
+//        print("refreshHeightIfNeededAnimated: old \(oldHeight) -> \(newHeight)")
         if oldHeight != newHeight {
             typealias HeightChangeSetHeightBlockType = ((_ oldHeight: CGFloat, _ newHeight: CGFloat) -> Void)
             let heightChangeSetHeightBlock: HeightChangeSetHeightBlockType = { (oldHeight: CGFloat, newHeight: CGFloat) -> Void in
@@ -321,7 +321,7 @@ public typealias HeightChangeUserActionsBlockType = ((_ oldHeight: CGFloat, _ ne
                 heightChangeCompletionBlock(oldHeight, newHeight)
             }
         } else {
-            print("refreshHeightIfNeededAnimated: SKIPPING scrolling to visibleCaretIfNeeded")
+//            print("refreshHeightIfNeededAnimated: SKIPPING scrolling to visibleCaretIfNeeded")
 //            scrollToVisibleCaretIfNeeded()
         }
     }
@@ -345,14 +345,14 @@ public typealias HeightChangeUserActionsBlockType = ((_ oldHeight: CGFloat, _ ne
     
     private func scrollToVisibleCaretIfNeeded() {
         guard let textPosition = selectedTextRange?.end else {
-            print("scrollToVisibleCaretIfNeeded: no selectedTextRange")
+//            print("scrollToVisibleCaretIfNeeded: no selectedTextRange")
             return
         }
         
         if textStorage.editedRange.location == NSNotFound && !isDragging && !isDecelerating {
             let caretRect = self.caretRect(for: textPosition)
             let caretCenterRect = CGRect(x: caretRect.midX, y: caretRect.midY, width: 0.0, height: 0.0)
-            print("scrollToVisibleCaretIfNeeded: caretRect \(caretRect)")
+//            print("scrollToVisibleCaretIfNeeded: caretRect \(caretRect)")
             scrollRectToVisibleConsideringInsets(caretCenterRect)
         }
     }
