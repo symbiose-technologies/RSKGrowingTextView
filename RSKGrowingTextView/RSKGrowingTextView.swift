@@ -58,9 +58,35 @@ public typealias HeightChangeUserActionsBlockType = ((_ oldHeight: CGFloat, _ ne
     
     private weak var heightConstraint: NSLayoutConstraint?
     
-    private var maxHeight: CGFloat { return heightForNumberOfLines(maximumNumberOfLines) }
+    public var explicitMaxHeight: CGFloat? = nil
     
-    private var minHeight: CGFloat { return heightForNumberOfLines(minimumNumberOfLines) }
+    public var explicitMinHeight: CGFloat? = nil
+    
+    
+    public var maxHeight: CGFloat {
+        let lineNumberDerivedHeight = heightForNumberOfLines(maximumNumberOfLines)
+        if let expMaxHeight = self.explicitMaxHeight {
+            if expMaxHeight < lineNumberDerivedHeight {
+                return expMaxHeight
+            } else {
+                return lineNumberDerivedHeight
+            }
+        }
+        return lineNumberDerivedHeight
+    }
+    
+    public var minHeight: CGFloat {
+        let lineNumberDerivedHeight = heightForNumberOfLines(minimumNumberOfLines)
+        if let expMinHeight = self.explicitMinHeight {
+            if expMinHeight > lineNumberDerivedHeight {
+                return expMinHeight
+            } else {
+                return lineNumberDerivedHeight
+            }
+        }
+        return lineNumberDerivedHeight
+    }
+    
     
     // MARK: - Open Properties
     
@@ -82,6 +108,7 @@ public typealias HeightChangeUserActionsBlockType = ((_ oldHeight: CGFloat, _ ne
             if maximumNumberOfLines < minimumNumberOfLines {
                 maximumNumberOfLines = minimumNumberOfLines
             }
+//            print("[RSKGrowingTextView] refreshHeight didSet  maximumNumberOfLines")
             refreshHeightIfNeededAnimated(false)
         }
     }
@@ -94,6 +121,7 @@ public typealias HeightChangeUserActionsBlockType = ((_ oldHeight: CGFloat, _ ne
             } else if minimumNumberOfLines > maximumNumberOfLines {
                 minimumNumberOfLines = maximumNumberOfLines
             }
+//            print("[RSKGrowingTextView] refreshHeight didSet  minimumNumberOfLines")
             refreshHeightIfNeededAnimated(false)
         }
     }
@@ -126,6 +154,7 @@ public typealias HeightChangeUserActionsBlockType = ((_ oldHeight: CGFloat, _ ne
 
     override open var attributedText: NSAttributedString! {
         didSet {
+//            print("[RSKGrowingTextView] refreshHeight didSet attributedText")
             refreshHeightIfNeededAnimated(false)
         }
     }
@@ -136,8 +165,10 @@ public typealias HeightChangeUserActionsBlockType = ((_ oldHeight: CGFloat, _ ne
                 return
             }
             if window != nil && isFirstResponder {
+//                print("[RSKGrowingTextView] refreshHeight didSet contentSize isFirstResponder")
                 refreshHeightIfNeededAnimated(animateHeightChange)
             } else {
+//                print("[RSKGrowingTextView] refreshHeight didSet contentSize NOT firstresponder")
                 refreshHeightIfNeededAnimated(false)
             }
         }
@@ -174,6 +205,7 @@ public typealias HeightChangeUserActionsBlockType = ((_ oldHeight: CGFloat, _ ne
         NotificationCenter.default.removeObserver(self, name: UITextView.textDidChangeNotification, object: self)
     }
     
+    
     required public init?(coder aDecoder: NSCoder) {
         calculationLayoutManager.addTextContainer(calculationTextContainer)
         super.init(coder: aDecoder)
@@ -186,16 +218,23 @@ public typealias HeightChangeUserActionsBlockType = ((_ oldHeight: CGFloat, _ ne
         commonInitializer()
     }
     
+    public init(addHeightConstraint: Bool) {
+        calculationLayoutManager.addTextContainer(calculationTextContainer)
+        super.init(frame: .zero, textContainer: nil)
+        commonInitializer(addHeightConstraint)
+    }
+    
+    
     // MARK: - Actions
     
     @objc private func handleRSKGrowingTextViewTextDidChangeNotification(_ notification: Notification) {
-        
-        refreshHeightIfNeededAnimated(animateHeightChange)
+//        print("Skipping notfication height refresh")
+//        refreshHeightIfNeededAnimated(animateHeightChange)
     }
     
     // MARK: - Private API
     
-    private func commonInitializer() {
+    private func commonInitializer(_ addHeightConstraint: Bool = false) {
         contentInset = UIEdgeInsets(top: 1.0, left: 0.0, bottom: 1.0, right: 0.0)
         scrollsToTop = false
         showsVerticalScrollIndicator = false
@@ -209,6 +248,16 @@ public typealias HeightChangeUserActionsBlockType = ((_ oldHeight: CGFloat, _ ne
                 break
             }
         }
+        
+        if addHeightConstraint {
+            heightConstraint = heightAnchor.constraint(greaterThanOrEqualToConstant: contentSize.height)
+            heightConstraint!.priority = .defaultHigh
+            NSLayoutConstraint.activate([
+                heightConstraint!
+            ])
+            setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        }
+        
         
         NotificationCenter.default.addObserver(self, selector: #selector(RSKGrowingTextView.handleRSKGrowingTextViewTextDidChangeNotification(_:)), name: UITextView.textDidChangeNotification, object: self)
     }
@@ -365,6 +414,10 @@ public typealias HeightChangeUserActionsBlockType = ((_ oldHeight: CGFloat, _ ne
             setNeedsLayout()
         } else {
             frame.size.height = height
+            //ADDED for swiftui presentation
+            invalidateIntrinsicContentSize()
+            setNeedsLayout()
+            
         }
     }
 }

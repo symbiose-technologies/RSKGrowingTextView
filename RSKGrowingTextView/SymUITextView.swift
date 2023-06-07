@@ -8,6 +8,18 @@ import UniformTypeIdentifiers
 
 open class SymUITextView: UITextView {
     
+    
+    open override var frame: CGRect {
+        didSet {
+            let newSize = self.frame.size
+            if oldValue.size != newSize {
+                self.sizeChangeCb?(newSize)
+            }
+        }
+    }
+    public var sizeChangeCb: ((CGSize) -> Void)?
+    
+    
     //pasteItemsCallback returns true if ALL items were handled
     public var pasteItemsCallback: (([NSItemProvider]) -> Bool)? = nil
     
