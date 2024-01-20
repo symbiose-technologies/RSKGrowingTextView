@@ -4,9 +4,10 @@
 import UIKit
 import SwiftUI
 import UniformTypeIdentifiers
+import RSKPlaceholderTextView
 
 
-open class SymUITextView: UITextView {
+open class SymUITextView: RSKPlaceholderTextView {
     
     
     open override var frame: CGRect {

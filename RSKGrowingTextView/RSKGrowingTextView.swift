@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 #if os(iOS)
-//import RSKPlaceholderTextView
+import RSKPlaceholderTextView
 import UIKit
 
 /// The type of the block which contains user defined actions that will run during the height change.
@@ -152,11 +152,11 @@ public typealias HeightChangeUserActionsBlockType = ((_ oldHeight: CGFloat, _ ne
     
     // MARK: - Superclass Properties
     
-//    open override var attributedPlaceholder: NSAttributedString? {
-//        didSet {
-//            refreshHeightIfNeededAnimated(false)
-//        }
-//    }
+    open override var attributedPlaceholder: NSAttributedString? {
+        didSet {
+            refreshHeightIfNeededAnimated(false)
+        }
+    }
 
     override open var attributedText: NSAttributedString! {
         didSet {
