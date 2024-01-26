@@ -210,11 +210,57 @@ open class SymUITextView: RSKPlaceholderTextView {
         let length = offset(from: range.start, to: range.end)
         return NSRange(location: location, length: length)
     }
+    
+    
+    /**
+     Paste text into the text view, at a certain index.
+
+     - Parameters:
+       - text: The text to paste.
+       - index: The text index to paste at.
+       - moveCursorToPastedContent: Whether or not to move the cursor to the end of the pasted content, by default `false`.
+     */
+    open func pasteText(
+        _ text: String,
+        at index: Int,
+        moveCursorToPastedContent: Bool = false
+    ) {
+        let content = NSMutableAttributedString(attributedString: attributedString)
+        let insertString = NSMutableAttributedString(string: text)
+        let insertRange = NSRange(location: index, length: 0)
+        let safeInsertRange = safeRange(for: insertRange)
+        let safeMoveIndex = safeInsertRange.location + insertString.length
+        let attributes = content.symRichTextAttributes(at: safeInsertRange)
+        let attributeRange = NSRange(location: 0, length: insertString.length)
+        let safeAttributeRange = safeRange(for: attributeRange)
+        insertString.symSetRichTextAttributes(attributes, at: safeAttributeRange)
+        content.insert(insertString, at: index)
+        setRichText(content)
+        if moveCursorToPastedContent {
+            moveInputCursor(to: safeMoveIndex)
+        }
+    }
+    
+    
+    /**
+     Get the rich text that is managed by the text view.
+     */
+    open var attributedString: NSAttributedString {
+        get { self.attributedText ?? NSAttributedString(string: "") }
+        set { attributedText = newValue }
+    }
+    
+    /**
+     Get the mutable rich text that is managed by the view.
+     */
+    open var mutableAttributedString: NSMutableAttributedString? {
+        textStorage
+    }
+    
 }
 
 
 extension SymUITextView: UIDropInteractionDelegate { }
-
 private extension UIDropSession {
 
     var hasDroppableContent: Bool {
@@ -231,59 +277,13 @@ private extension UIDropSession {
 }
 
 
-extension SymUITextView: RichTextAttributeReader { }
+extension SymUITextView: SymRichTextAttributeReader { }
 
-extension SymUITextView: RichTextAttributeWriter {
-    /**
-     Get the mutable rich text that is managed by the view.
-     */
-    public var mutableAttributedString: NSMutableAttributedString? {
-        textStorage
-    }
-}
-
-
-
-extension SymUITextView {
-    
-    /**
-     Get the rich text that is managed by the text view.
-     */
-    public var attributedString: NSAttributedString {
-        get { self.attributedText ?? NSAttributedString(string: "") }
-        set { attributedText = newValue }
-    }
-    
-    /**
-     Paste text into the text view, at a certain index.
-
-     - Parameters:
-       - text: The text to paste.
-       - index: The text index to paste at.
-       - moveCursorToPastedContent: Whether or not to move the cursor to the end of the pasted content, by default `false`.
-     */
-    func pasteText(
-        _ text: String,
-        at index: Int,
-        moveCursorToPastedContent: Bool = false
-    ) {
-        let content = NSMutableAttributedString(attributedString: attributedString)
-        let insertString = NSMutableAttributedString(string: text)
-        let insertRange = NSRange(location: index, length: 0)
-        let safeInsertRange = safeRange(for: insertRange)
-        let safeMoveIndex = safeInsertRange.location + insertString.length
-        let attributes = content.richTextAttributes(at: safeInsertRange)
-        let attributeRange = NSRange(location: 0, length: insertString.length)
-        let safeAttributeRange = safeRange(for: attributeRange)
-        insertString.setRichTextAttributes(attributes, at: safeAttributeRange)
-        content.insert(insertString, at: index)
-        setRichText(content)
-        if moveCursorToPastedContent {
-            moveInputCursor(to: safeMoveIndex)
-        }
-    }
+extension SymUITextView: SymRichTextAttributeWriter {
     
 }
+
+
 
 /**
  This protocol can be implemented any types that can provide
@@ -292,7 +292,7 @@ extension SymUITextView {
  The protocol is implemented by `NSAttributedString` as well
  as other types in the library.
  */
-public protocol RichTextReader {
+public protocol SymRichTextReader {
 
     /**
      The attributed string to use as rich text.
@@ -300,7 +300,7 @@ public protocol RichTextReader {
     var attributedString: NSAttributedString { get }
 }
 
-extension NSAttributedString: RichTextReader {
+extension NSAttributedString: SymRichTextReader {
 
     /**
      This type returns itself as the attributed string.
@@ -308,7 +308,7 @@ extension NSAttributedString: RichTextReader {
     public var attributedString: NSAttributedString { self }
 }
 
-public extension RichTextReader {
+public extension SymRichTextReader {
 
     /**
      The rich text to use.
@@ -317,7 +317,7 @@ public extension RichTextReader {
      to provide this type with a property that uses the rich
      text naming convention.
      */
-    var richText: NSAttributedString {
+    var symRichText: NSAttributedString {
         attributedString
     }
 
@@ -327,8 +327,8 @@ public extension RichTextReader {
      This uses ``safeRange(for:)`` to return a range that is
      always valid for the current rich text.
      */
-    var richTextRange: NSRange {
-        let range = NSRange(location: 0, length: richText.length)
+    var symRichTextRange: NSRange {
+        let range = NSRange(location: 0, length: symRichText.length)
         let safeRange = safeRange(for: range)
         return safeRange
     }
@@ -343,7 +343,7 @@ public extension RichTextReader {
      - Parameters:
        - range: The range for which to get the rich text.
      */
-    func richText(at range: NSRange) -> NSAttributedString {
+    func symRichText(at range: NSRange) -> NSAttributedString {
         let range = safeRange(for: range)
         return attributedString.attributedSubstring(from: range)
     }
@@ -373,7 +373,7 @@ public extension RichTextReader {
  This protocol is implemented by `NSMutableAttributedString`
  as well as other types in the library.
  */
-public protocol RichTextWriter: RichTextReader {
+public protocol SymRichTextWriter: SymRichTextReader {
 
     /**
      Get the writable attributed string provided by the type.
@@ -381,7 +381,7 @@ public protocol RichTextWriter: RichTextReader {
     var mutableAttributedString: NSMutableAttributedString? { get }
 }
 
-extension NSMutableAttributedString: RichTextWriter {
+extension NSMutableAttributedString: SymRichTextWriter {
 
     /**
      This type returns itself as mutable attributed string.
@@ -391,7 +391,7 @@ extension NSMutableAttributedString: RichTextWriter {
     }
 }
 
-public extension RichTextWriter {
+public extension SymRichTextWriter {
 
     /**
      Get the writable rich text provided by the implementing
@@ -435,11 +435,11 @@ public extension RichTextWriter {
  This protocol is implemented by `NSMutableAttributedString`
  as well as other types in the library.
  */
-public protocol RichTextAttributeWriter: RichTextWriter {}
+public protocol SymRichTextAttributeWriter: SymRichTextWriter {}
 
-extension NSMutableAttributedString: RichTextAttributeWriter {}
+extension NSMutableAttributedString: SymRichTextAttributeWriter {}
 
-public extension RichTextAttributeWriter {
+public extension SymRichTextAttributeWriter {
 
     /**
      Set a certain rich text attribute to a certain value at
@@ -453,12 +453,12 @@ public extension RichTextAttributeWriter {
        - newValue: The new value to set the attribute to.
        - range: The range for which to set the attribute.
      */
-    func setRichTextAttribute(
+    func symSetRichTextAttribute(
         _ attribute: NSAttributedString.Key,
         to newValue: Any,
         at range: NSRange
     ) {
-        setRichTextAttributes([attribute: newValue], at: range)
+        symSetRichTextAttributes([attribute: newValue], at: range)
     }
 
     /**
@@ -471,7 +471,7 @@ public extension RichTextAttributeWriter {
        - attributes: The attributes to set.
        - range: The range for which to set the attributes.
      */
-    func setRichTextAttributes(
+    func symSetRichTextAttributes(
         _ attributes: [NSAttributedString.Key: Any],
         at range: NSRange
     ) {
@@ -497,11 +497,11 @@ public extension RichTextAttributeWriter {
  The protocol is implemented by `NSAttributedString` as well
  as other types in the library.
  */
-public protocol RichTextAttributeReader: RichTextReader {}
+public protocol SymRichTextAttributeReader: SymRichTextReader {}
 
-extension NSAttributedString: RichTextAttributeReader {}
+extension NSAttributedString: SymRichTextAttributeReader {}
 
-public extension RichTextAttributeReader {
+public extension SymRichTextAttributeReader {
 
     /**
      Get all rich text attributes at the provided range.
@@ -516,12 +516,12 @@ public extension RichTextAttributeReader {
      - Parameters:
        - range: The range to get attributes from.
      */
-    func richTextAttributes(
+    func symRichTextAttributes(
         at range: NSRange
     ) -> [NSAttributedString.Key: Any] {
-        if richText.length == 0 { return [:] }
+        if symRichText.length == 0 { return [:] }
         let range = safeRange(for: range)
-        return richText.attributes(at: range.location, effectiveRange: nil)
+        return symRichText.attributes(at: range.location, effectiveRange: nil)
     }
 }
 

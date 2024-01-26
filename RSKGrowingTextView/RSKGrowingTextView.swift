@@ -242,7 +242,7 @@ public typealias HeightChangeUserActionsBlockType = ((_ oldHeight: CGFloat, _ ne
     
     
     // MARK: - Actions
-        @available(iOS 16.0, *)
+    @available(iOS 16.0, *)
     public convenience init(usingTextLayoutManager: Bool) {
         if usingTextLayoutManager {
             self.init(frame: .zero, textContainer: nil)
@@ -455,6 +455,8 @@ public typealias HeightChangeUserActionsBlockType = ((_ oldHeight: CGFloat, _ ne
                 heightChangeCompletionBlock(oldHeight, newHeight)
             }
         } else {
+            scrollToVisibleCaretIfNeeded()
+            
 //            print("refreshHeightIfNeededAnimated: SKIPPING scrolling to visibleCaretIfNeeded")
 //            scrollToVisibleCaretIfNeeded()
         }
