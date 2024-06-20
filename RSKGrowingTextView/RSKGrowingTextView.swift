@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-
+#if os(iOS)
 import RSKPlaceholderTextView
 import UIKit
 
@@ -44,7 +44,7 @@ public typealias HeightChangeUserActionsBlockType = ((_ oldHeight: CGFloat, _ ne
 }
 
 /// A light-weight UITextView subclass that automatically grows and shrinks based on the size of user input and can be constrained by maximum and minimum number of lines.
-@IBDesignable open class RSKGrowingTextView: RSKPlaceholderTextView {
+@IBDesignable open class RSKGrowingTextView: SymUITextView {
     
     // MARK: - Private Properties
     
@@ -61,9 +61,35 @@ public typealias HeightChangeUserActionsBlockType = ((_ oldHeight: CGFloat, _ ne
     
     private weak var heightConstraint: NSLayoutConstraint?
     
-    private var maxHeight: CGFloat { return heightForNumberOfLines(maximumNumberOfLines) }
+    public var explicitMaxHeight: CGFloat? = nil
     
-    private var minHeight: CGFloat { return heightForNumberOfLines(minimumNumberOfLines) }
+    public var explicitMinHeight: CGFloat? = nil
+    
+    
+    public var maxHeight: CGFloat {
+        let lineNumberDerivedHeight = heightForNumberOfLines(maximumNumberOfLines)
+        if let expMaxHeight = self.explicitMaxHeight {
+            if expMaxHeight < lineNumberDerivedHeight {
+                return expMaxHeight
+            } else {
+                return lineNumberDerivedHeight
+            }
+        }
+        return lineNumberDerivedHeight
+    }
+    
+    public var minHeight: CGFloat {
+        let lineNumberDerivedHeight = heightForNumberOfLines(minimumNumberOfLines)
+        if let expMinHeight = self.explicitMinHeight {
+            if expMinHeight > lineNumberDerivedHeight {
+                return expMinHeight
+            } else {
+                return lineNumberDerivedHeight
+            }
+        }
+        return lineNumberDerivedHeight
+    }
+    
     
     // MARK: - Open Properties
     
@@ -85,6 +111,7 @@ public typealias HeightChangeUserActionsBlockType = ((_ oldHeight: CGFloat, _ ne
             if maximumNumberOfLines < minimumNumberOfLines {
                 maximumNumberOfLines = minimumNumberOfLines
             }
+//            print("[RSKGrowingTextView] refreshHeight didSet  maximumNumberOfLines")
             refreshHeightIfNeededAnimated(false)
         }
     }
@@ -97,6 +124,7 @@ public typealias HeightChangeUserActionsBlockType = ((_ oldHeight: CGFloat, _ ne
             } else if minimumNumberOfLines > maximumNumberOfLines {
                 minimumNumberOfLines = maximumNumberOfLines
             }
+//            print("[RSKGrowingTextView] refreshHeight didSet  minimumNumberOfLines")
             refreshHeightIfNeededAnimated(false)
         }
     }
@@ -132,6 +160,7 @@ public typealias HeightChangeUserActionsBlockType = ((_ oldHeight: CGFloat, _ ne
 
     override open var attributedText: NSAttributedString! {
         didSet {
+//            print("[RSKGrowingTextView] refreshHeight didSet attributedText")
             refreshHeightIfNeededAnimated(false)
         }
     }
@@ -142,8 +171,10 @@ public typealias HeightChangeUserActionsBlockType = ((_ oldHeight: CGFloat, _ ne
                 return
             }
             if window != nil && isFirstResponder {
+//                print("[RSKGrowingTextView] refreshHeight didSet contentSize isFirstResponder")
                 refreshHeightIfNeededAnimated(animateHeightChange)
             } else {
+//                print("[RSKGrowingTextView] refreshHeight didSet contentSize NOT firstresponder")
                 refreshHeightIfNeededAnimated(false)
             }
         }
@@ -173,6 +204,12 @@ public typealias HeightChangeUserActionsBlockType = ((_ oldHeight: CGFloat, _ ne
     
     // MARK: - Object Lifecycle
     
+    deinit {
+        
+        NotificationCenter.default.removeObserver(self, name: UITextView.textDidChangeNotification, object: self)
+    }
+    
+    
     required public init?(coder aDecoder: NSCoder) {
         if #available(iOS 16.0, *) {
             let calculationTextLayoutManager = NSTextLayoutManager()
@@ -197,6 +234,14 @@ public typealias HeightChangeUserActionsBlockType = ((_ oldHeight: CGFloat, _ ne
         commonInitializer()
     }
     
+    public init(addHeightConstraint: Bool) {
+        calculationLayoutManager.addTextContainer(calculationTextContainer)
+        super.init(frame: .zero, textContainer: nil)
+        commonInitializer(addHeightConstraint)
+    }
+    
+    
+    // MARK: - Actions
     @available(iOS 16.0, *)
     public convenience init(usingTextLayoutManager: Bool) {
         if usingTextLayoutManager {
@@ -218,8 +263,8 @@ public typealias HeightChangeUserActionsBlockType = ((_ oldHeight: CGFloat, _ ne
     }
     
     // MARK: - Private API
-    
-    private func commonInitializer() {
+  
+    private func commonInitializer(_ addHeightConstraint: Bool = false) {
         if #available(iOS 16.0, *), textLayoutManager == nil {
             _calculationTextLayoutManager = nil
             calculationLayoutManager.addTextContainer(calculationTextContainer)
@@ -242,6 +287,16 @@ public typealias HeightChangeUserActionsBlockType = ((_ oldHeight: CGFloat, _ ne
                 break
             }
         }
+        
+        if addHeightConstraint {
+            heightConstraint = heightAnchor.constraint(greaterThanOrEqualToConstant: contentSize.height)
+            heightConstraint!.priority = .defaultHigh
+            NSLayoutConstraint.activate([
+                heightConstraint!
+            ])
+            setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        }
+        
         
         NotificationCenter.default.addObserver(self, selector: #selector(RSKGrowingTextView.handleRSKGrowingTextViewTextDidChangeNotification(_:)), name: UITextView.textDidChangeNotification, object: self)
     }
@@ -293,6 +348,7 @@ public typealias HeightChangeUserActionsBlockType = ((_ oldHeight: CGFloat, _ ne
     }
     
     private func makeCalculatedSize(textContainerSize: CGSize) -> CGSize {
+
         var size = CGSize.zero
         
         if #available(iOS 16.0, *), let calculationTextLayoutManager {
@@ -360,7 +416,7 @@ public typealias HeightChangeUserActionsBlockType = ((_ oldHeight: CGFloat, _ ne
     private func refreshHeightIfNeededAnimated(_ animated: Bool) {
         let oldHeight = bounds.height
         let newHeight = calculatedHeight
-        
+//        print("refreshHeightIfNeededAnimated: old \(oldHeight) -> \(newHeight)")
         if oldHeight != newHeight {
             typealias HeightChangeSetHeightBlockType = ((_ oldHeight: CGFloat, _ newHeight: CGFloat) -> Void)
             let heightChangeSetHeightBlock: HeightChangeSetHeightBlockType = { (oldHeight: CGFloat, newHeight: CGFloat) -> Void in
@@ -400,6 +456,9 @@ public typealias HeightChangeUserActionsBlockType = ((_ oldHeight: CGFloat, _ ne
             }
         } else {
             scrollToVisibleCaretIfNeeded()
+            
+//            print("refreshHeightIfNeededAnimated: SKIPPING scrolling to visibleCaretIfNeeded")
+//            scrollToVisibleCaretIfNeeded()
         }
     }
     
@@ -427,12 +486,14 @@ public typealias HeightChangeUserActionsBlockType = ((_ oldHeight: CGFloat, _ ne
     
     private func scrollToVisibleCaretIfNeeded() {
         guard let textPosition = selectedTextRange?.end else {
+//            print("scrollToVisibleCaretIfNeeded: no selectedTextRange")
             return
         }
         
         if textStorage.editedRange.location == NSNotFound && !isDragging && !isDecelerating {
             let caretRect = self.caretRect(for: textPosition)
             let caretCenterRect = CGRect(x: caretRect.midX, y: caretRect.midY, width: 0.0, height: 0.0)
+//            print("scrollToVisibleCaretIfNeeded: caretRect \(caretRect)")
             scrollRectToVisibleConsideringInsets(caretCenterRect)
         }
     }
@@ -445,6 +506,11 @@ public typealias HeightChangeUserActionsBlockType = ((_ oldHeight: CGFloat, _ ne
             setNeedsLayout()
         } else {
             frame.size.height = height
+            //ADDED for swiftui presentation
+            invalidateIntrinsicContentSize()
+            setNeedsLayout()
+            
         }
     }
 }
+#endif
