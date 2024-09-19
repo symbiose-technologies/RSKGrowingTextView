@@ -1,4 +1,4 @@
-// swift-tools-version:5.7
+// swift-tools-version:5.9
 
 
 import PackageDescription
@@ -6,8 +6,8 @@ import PackageDescription
 let package = Package(
     name: "RSKGrowingTextView",
     platforms: [
-        .iOS(.v14),
-        .macOS(.v11)
+        .iOS(.v17),
+        .macOS(.v14)
     ],
     products: [
         .library(name: "RSKGrowingTextView", targets: ["RSKGrowingTextView"])
